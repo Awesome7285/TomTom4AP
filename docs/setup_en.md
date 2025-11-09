@@ -2,7 +2,15 @@
 
 ## Required Software
 
+- TomTom Adventures Archipelago Version.
+- Archipelago Launcher.
 
+## Installing an APWorld
+
+1. Install the [latest version of Archipelago](https://github.com/ArchipelagoMW/Archipelago/releases). Remember where 
+the installation folder is, because it will be needed.
+2. In your Archipelago folder, navigate to the "custom_worlds" folder and add tomtom4.apworld.
+3. Navigate back to your Archipelago folder and launch ArchipelagoLauncher.exe. You will know the install was successful if you see the "TomTom 4 Client" in the list.
 
 ## Configuring a YAML File
 
@@ -11,29 +19,17 @@
 The [basic multiworld setup guide](https://archipelago.gg/tutorial/Archipelago/setup/en) explains the use of a YAML and
 the way they are used.
 
-### How do I get a YAML for Keep Talking and Nobody Explodes?
+### How do I get a YAML for TomTom Adventures Flaming Special?
 
-Since this game isn't fully released yet, the only way to get a YAML template is to generate it from the Archipelago
-Software.
-
-1. Install the [latest version of Archipelago](https://github.com/ArchipelagoMW/Archipelago/releases). Remember where 
-the installation folder is, because it will be needed.
-2. In your Archipelago folder, navigate to the "custom_worlds" folder and add ktane.apworld. If you have a previous 
-version of ktane.apworld installed in the "lib/worlds" directory, you will need to remove it.
-3. Navigate back to your Archipelago folder and launch ArchipelagoLauncher.exe. A window should appear. In this window,
-on the left, click on "Generate Template Options". It will open a window with a lot of .yaml files.
-4. Locate the one that's named "Keep Talking and Nobody Explodes.yaml". This is your base template. You can create a 
+1. In Archipelago Launcher, click on "Generate Template Options". It will open a window with a lot of .yaml files.
+2. Locate the one that's named "TomTom Adventures Flaming Special.yaml". This is your base template. You can create a 
 copy of it.
 
 ## Generating a Randomized Playthrough
 
-Since Keep Talking and Nobody Explodes isn't fully released yet, the only way to generate a seed containing the game
-must be locally.
-
-1. Follow steps 1 and 2 from the previous section to add the .apworld to the generation list.
-2. In your Archipelago folder, navigate to the "Players" folder. In this folder, add all the YAMLs that will be used to
+1. In your Archipelago folder, navigate to the "Players" folder. In this folder, add all the YAMLs that will be used to
 generate the MultiWorld randomized seed.
-3. Navigate back to your Archipelago folder and launch ArchipelagoGenerate.exe. The program will execute and create a 
+2. Navigate back to your Archipelago folder and launch ArchipelagoGenerate.exe. The program will execute and create a 
 new seed with all the YAML files present in the "Players" folder. The generated seed will be in the "output" folder.
 
 Please note that the generation may fail. If it fails because of invalid placement, please try again and it should work.
@@ -63,5 +59,9 @@ Please remember the 2 following things:
 
 ## Joining a MultiWorld Game
 
-Since this game is based for a defuser and an expert, they have two different ways of joining a game.
+1. Open the "TomTom 4 Client" from the Launcher.
+2. The client should prompt you for a file executable. This file is your game exe, it should be titled "TomTom Flaming Special Archipelago.exe". Navigate to it and select it. The client should then open the game for you.
+3. Connect to the Archipelago server and enter your slot name.
+4. After connecting, start playing!
+Note: After selecting the directory for your game executable, the client stores this directory in a file in your Archipelago's install titled ".tomtom4_client_config.json". The client will only prompt you once for the game directory. If you reinstall the game or happen to move it elsewhere, you should delete the config file so the client re-prompts you for the game directory.
 

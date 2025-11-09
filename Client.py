@@ -308,7 +308,7 @@ def main():
             print("No TomTom4 executable selected. Client will not auto-launch game.")
         else:
             try:
-                #popen = launch_game(game_dir=game_dir)
+                popen = launch_game(game_dir=game_dir)
                 print("Launched game from:", game_dir)
             except Exception as e:
                 print("Failed to launch game:", e)
