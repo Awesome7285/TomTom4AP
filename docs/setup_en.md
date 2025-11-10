@@ -2,7 +2,7 @@
 
 ## Required Software
 
-- TomTom Adventures Archipelago Version.
+- TomTom Adventures 4 Archipelago Version.
 - Archipelago Launcher.
 
 ## Installing an APWorld
@@ -60,7 +60,7 @@ Please remember the 2 following things:
 ## Joining a MultiWorld Game
 
 1. Open the "TomTom 4 Client" from the Launcher.
-2. The client should prompt you for a file executable. This file is your game exe, it should be titled "TomTom Flaming Special Archipelago.exe". Navigate to it and select it. The client should then open the game for you.
+2. The client should prompt you for a file executable. This file is your game exe, it should be titled "TomTomAdventures4AP.exe". Navigate to it and select it. The client should then open the game for you.
 3. Connect to the Archipelago server and enter your slot name.
 4. After connecting, start playing!
 Note: After selecting the directory for your game executable, the client stores this directory in a file in your Archipelago's install titled ".tomtom4_client_config.json". The client will only prompt you once for the game directory. If you reinstall the game or happen to move it elsewhere, you should delete the config file so the client re-prompts you for the game directory.

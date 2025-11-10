@@ -1,159 +1,36 @@
-import subprocess, os, sys, Utils, asyncio, configparser, multiprocessing, json
+import os, sys, Utils, asyncio, configparser, multiprocessing, time
 import colorama
-from pathlib import Path
 from collections import Counter
 
-from CommonClient import CommonContext, server_loop, gui_enabled, get_base_parser, logger, ClientStatus
+from CommonClient import CommonContext, server_loop, gui_enabled, get_base_parser, logger, ClientStatus, ClientCommandProcessor
 from .Items import item_table, BASE_ID
 from .Locations import location_table, stage_locations
 
-# CONFIG filename (stored in user home)
-CONFIG_FILENAME = Path(os.path.join(Utils.user_path(), ".tomtom4_client_config.json"))
-EXPECTED_EXE_NAMES = ["TomTom Flaming Special Archipelago.exe"]  # tolerate variations
+from ClientExe import launch_game, ensure_game_dir
 
-def load_saved_game_dir():
-    """Return saved directory Path or None."""
-    try:
-        if CONFIG_FILENAME.exists():
-            data = json.loads(CONFIG_FILENAME.read_text(encoding="utf-8"))
-            p = Path(data.get("game_dir", ""))
-            if p.exists() and p.is_dir():
-                return p
-    except Exception:
-        print("yes: ", CONFIG_FILENAME)
-        pass
-    return None
 
-def save_game_dir(game_dir: Path):
-    """Persist the chosen game_dir for next runs."""
-    try:
-        CONFIG_FILENAME.write_text(json.dumps({"game_dir": str(game_dir)}), encoding="utf-8")
-    except Exception as e:
-        print("Warning: failed to save tomtom4 client config:", e)
+### INI OPENING STUFF
 
-def _is_valid_game_exe(path: Path):
-    """Simple heuristic: path is file and name matches expected exe name or contains 'tomtom'."""
-    if not path.exists() or not path.is_file():
-        return False
-    name = path.name.lower()
-    if any(exe.lower() == name for exe in EXPECTED_EXE_NAMES):
-        return True
-    return False
-
-def prompt_for_exe_via_gui(initialdir=None):
-    """Open a Tk file dialog to pick the executable. Returns Path or None."""
-    try:
-        import tkinter as tk
-        from tkinter import filedialog
-    except Exception:
-        return None
-
-    root = tk.Tk()
-    root.withdraw()  # hide main window
-    root.attributes("-topmost", True)  # bring dialog to front on Windows
-    filetypes = [("Executable", "*.exe"), ("All files", "*.*")]
-    try:
-        selected = filedialog.askopenfilename(title="Select TomTom4 executable",
-                                              initialdir=initialdir or str(Path.home()),
-                                              filetypes=filetypes)
-    finally:
-        try:
-            root.destroy()
-        except Exception:
-            pass
-
-    if not selected:
-        return None
-    return Path(selected)
-
-def prompt_for_exe_via_console(initialdir=None):
-    """Fallback: ask user to paste the full path in the console."""
-    prompt = "Enter full path to TomTom4 executable (or blank to cancel): "
-    if initialdir:
-        print("Please select TomTom4 executable. Suggested dir:", initialdir)
-    val = input(prompt).strip()
-    if not val:
-        return None
-    return Path(val)
-
-def ask_user_for_game_exe():
-    """
-    Try GUI picker first, then console. Validate selection and return (exe_path, game_dir) or (None, None).
-    """
-    # Try GUI
-    exe_path = prompt_for_exe_via_gui()
-    if exe_path and _is_valid_game_exe(exe_path):
-        return exe_path.resolve(), exe_path.parent.resolve()
-
-    # GUI either cancelled or picked invalid file. Ask via console (if interactive).
-    if sys.stdin and sys.stdin.isatty():
-        exe_path = prompt_for_exe_via_console()
-        if exe_path and _is_valid_game_exe(exe_path):
-            return exe_path.resolve(), exe_path.parent.resolve()
-
-    # last attempt: search current directory and parent for likely exe
-    cwd = Path.cwd()
-    for candidate in cwd.iterdir():
-        if candidate.is_file() and _is_valid_game_exe(candidate):
-            return candidate.resolve(), candidate.parent.resolve()
-
-    return None, None
-
-def ensure_game_dir():
-    """
-    Return Path to game directory. Load saved config or prompt user. Save result.
-    """
-    saved = load_saved_game_dir()
-    if saved:
-        # quick sanity check: the exe must exist in that dir
-        for name in EXPECTED_EXE_NAMES:
-            candidate = saved / name
-            if candidate.exists() and candidate.is_file():
-                return saved
-        # if saved dir no longer valid, fall through to prompt
-
-    exe_path, game_dir = ask_user_for_game_exe()
-    if exe_path and game_dir:
-        save_game_dir(game_dir)
-        return game_dir
-
-    return None
-
-def launch_game(exe_path: Path = None, game_dir: Path = None):
-    """
-    Launch the game exe with working directory set to game_dir (or exe parent).
-    exe_path optional; if omitted the function will try to find an exe inside game_dir.
-    """
-    if game_dir is None and exe_path is None:
-        raise ValueError("Either exe_path or game_dir must be provided")
-    if game_dir is None:
-        game_dir = exe_path.parent
-    if exe_path is None:
-        # try to find an exe inside game_dir
-        for name in EXPECTED_EXE_NAMES:
-            candidate = game_dir / name
-            if candidate.exists():
-                exe_path = candidate
-                break
-        if exe_path is None:
-            # choose any .exe in folder
-            candidates = list(game_dir.glob("*.exe"))
-            exe_path = candidates[0] if candidates else None
-    if not exe_path or not exe_path.exists():
-        raise FileNotFoundError(f"Could not find executable in {game_dir}")
-
-    # Launch and return Popen object
-    popen = subprocess.Popen([str(exe_path)], cwd=str(game_dir))
-    return popen
+MAX_RETRIES = 3
+RETRY_DELAY = 0.05  # 50 ms between tries
 
 def clear_ini(ini_dir):
-    if os.path.exists(ini_dir):
-        os.remove(ini_dir)
-    config = configparser.ConfigParser()
-    config.add_section("Items")
-    config.add_section("Locations")
-    with open(ini_dir, "w") as f:
-        config.write(f)
+    for attempt in range(MAX_RETRIES):
+        try:
+            if os.path.exists(ini_dir):
+                os.remove(ini_dir)
+            config = configparser.ConfigParser()
+            config.add_section("Items")
+            config.add_section("Locations")
+            with open(ini_dir, "w") as f:
+                config.write(f)
+            break
+        except PermissionError:
+            if attempt < MAX_RETRIES - 1:
+                time.sleep(RETRY_DELAY)
+            else:
+                print(f"WARNING: Failed to remove {ini_dir} after {MAX_RETRIES} attempts.")
+
 
 def read_ini_section(ini_dir, section):
     config = configparser.ConfigParser()
@@ -171,7 +48,28 @@ def write_ini(ini_dir, section, key, value):
     tmp = ini_dir + ".tmp"
     with open(tmp, "w") as f:
         config.write(f)
-    os.replace(tmp, ini_dir)
+    
+    for attempt in range(MAX_RETRIES):
+        try:
+            os.replace(tmp, ini_dir)
+            break
+        except PermissionError:
+            if attempt < MAX_RETRIES - 1:
+                time.sleep(RETRY_DELAY)
+            else:
+                print(f"WARNING: Failed to replace {ini_dir} after {MAX_RETRIES} attempts.")
+        
+### ARCHIPELAGO STUFF
+
+class TomTom4ClientCommand(ClientCommandProcessor):
+    def _cmd_refresh(self):
+        """Manually refresh all items from the server and rewrite them to the INI."""
+        items = sorted(self.ctx.items_received)
+        clear_ini(self.ctx.ini_dir)
+        asyncio.create_task(self.ctx.update_received_items(items))
+        asyncio.create_task(self.ctx.update_checked_locations(self.ctx.previous_location_checked))
+        logger.info("Refreshed Items and Locations.")
+        return None
 
 class TomTom4Context(CommonContext):
     game = "TomTom Adventures Flaming Special"
@@ -185,6 +83,7 @@ class TomTom4Context(CommonContext):
         self.checked_locations = set()
         self.is_connected = False
         self.options = None
+        self.command_processor = TomTom4ClientCommand
 
         self.all_location_ids = None
         self.location_name_to_ap_id = None

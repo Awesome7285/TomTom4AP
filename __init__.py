@@ -83,7 +83,7 @@ class TomTom4World(World):
     def fill_slot_data(self):
         slot_data: Dict[str, object] = {
             "goal": self.options.goal.value,
-            "DeathLink": self.options.death_link.value == True,
+            #"DeathLink": self.options.death_link.value == True,
         }
 
         return slot_data
