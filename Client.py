@@ -6,7 +6,7 @@ from CommonClient import CommonContext, server_loop, gui_enabled, get_base_parse
 from .Items import item_table, BASE_ID
 from .Locations import location_table, stage_locations
 
-from ClientExe import launch_game, ensure_game_dir
+from .ClientExe import launch_game, ensure_game_dir
 
 
 ### INI OPENING STUFF

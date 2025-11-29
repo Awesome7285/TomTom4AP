@@ -1,11 +1,19 @@
-import os, Utils, json, sys, subprocess
+import os, Utils, json, sys, subprocess, pkgutil
 from pathlib import Path
 
 
 ### GAME DIRECTORY STUFF
 
 CONFIG_FILENAME = Path(os.path.join(Utils.user_path(), ".tomtom4_client_config.json"))
-EXPECTED_EXE_NAMES = ["TomTom Flaming Special Archipelago.exe", "TomTomAdventures4AP"]  # tolerate variations
+EXPECTED_EXE_NAMES = ["TomTom Flaming Special Archipelago.exe", "TomTomAdventures4AP.exe"]  # tolerate variations
+VERSION = None
+
+def determine_version():
+    global VERSION
+    data = json.loads(pkgutil.get_data(__name__, "archipelago.json").decode())
+    VERSION = data["world_version"]
+
+determine_version()
 
 def load_saved_game_dir():
     """Return saved directory Path or None."""
@@ -13,7 +21,8 @@ def load_saved_game_dir():
         if CONFIG_FILENAME.exists():
             data = json.loads(CONFIG_FILENAME.read_text(encoding="utf-8"))
             p = Path(data.get("game_dir", ""))
-            if p.exists() and p.is_dir():
+            v = data.get("version", None)
+            if p.exists() and p.is_dir() and v == VERSION:
                 return p
     except Exception:
         print("yes: ", CONFIG_FILENAME)
@@ -23,7 +32,7 @@ def load_saved_game_dir():
 def save_game_dir(game_dir: Path):
     """Persist the chosen game_dir for next runs."""
     try:
-        CONFIG_FILENAME.write_text(json.dumps({"game_dir": str(game_dir)}), encoding="utf-8")
+        CONFIG_FILENAME.write_text(json.dumps({"game_dir": str(game_dir), "version": VERSION}), encoding="utf-8")
     except Exception as e:
         print("Warning: failed to save tomtom4 client config:", e)
 
